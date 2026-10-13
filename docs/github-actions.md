@@ -12,11 +12,9 @@
 
 打开项目仓库：
 
-**https://github.com/unmev/douyin-auto-fire**
+**https://github.com/hxcong666/douyin-auto-fire_new**
 
 点击右上角 **Fork**，将项目 Fork 到自己的 GitHub 账号。
-
-![Fork 项目](https://img.908988.xyz/file/教程/douyin-auto-fire/DKPd0GVi.webp)
 
 Fork 完成后，后面的所有操作都在 **你自己 Fork 出来的仓库** 中进行。
 
@@ -58,17 +56,11 @@ Send Douyin Messages
 
 安装完成后，回到已经登录抖音的页面并打开 Cookie-Editor。
 
-![打开 Cookie-Editor](https://img.908988.xyz/file/教程/douyin-auto-fire/STZqIxDn.webp)
-
 ### 3.3 导出 Cookie
 
 点击 Cookie-Editor 的导出功能，导出格式选择 **JSON**。
 
-![导出 Cookie](https://img.908988.xyz/file/教程/douyin-auto-fire/1rilVYmK.webp)
-
 然后复制完整的 JSON 内容。
-
-![复制 Cookie JSON](https://img.908988.xyz/file/教程/douyin-auto-fire/QKQHfndn.webp)
 
 正确格式大致如下：
 
@@ -97,12 +89,6 @@ Send Douyin Messages
 ## 4. 生成发送配置
 
 除了 Cookie，程序还需要知道给谁发送、发送什么内容以及消息发送间隔。
-
-如果不想自己写 JSON，可以直接使用配置生成器：
-
-**https://douyin-config.pages.dev/**
-
-生成完成后复制网站生成的完整 JSON。
 
 一个最简单的配置例如：
 
@@ -143,10 +129,6 @@ Actions
 ↓
 New repository secret
 ```
-
-![进入 Secrets](https://img.908988.xyz/file/教程/douyin-auto-fire/aiPBHuxJ.webp)
-
-![创建 Secret](https://img.908988.xyz/file/教程/douyin-auto-fire/BKtXckyQ.webp)
 
 第一次使用至少需要添加下面两个 Secret：
 
@@ -214,8 +196,6 @@ Run workflow
 ```
 
 第一次运行时，将 `dry_run` 开启（即 `true`），然后点击 **Run workflow**。
-
-![运行 GitHub Actions](https://img.908988.xyz/file/教程/douyin-auto-fire/NLFF8g94.webp)
 
 如果最后显示绿色的 `✓`，说明本次运行成功。
 
@@ -352,13 +332,11 @@ CREATE CRONJOB
 https://api.github.com/repos/你的GitHub用户名/douyin-auto-fire/actions/workflows/send.yml/dispatches
 ```
 
-例如原项目仓库对应的地址是：
+如果仓库名不是 `douyin-auto-fire`，需要把地址中的仓库名一并替换。例如本仓库对应的地址是：
 
 ```text
-https://api.github.com/repos/unmev/douyin-auto-fire/actions/workflows/send.yml/dispatches
+https://api.github.com/repos/hxcong666/douyin-auto-fire_new/actions/workflows/send.yml/dispatches
 ```
-
-如果使用的是自己 Fork 的仓库，必须将 `unmev` 换成你自己的 GitHub 用户名。
 
 ### 8.5 设置请求方式
 

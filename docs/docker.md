@@ -2,12 +2,9 @@
 
 本教程介绍如何使用 Docker 部署 `douyin-auto-fire`，支持单账号、多账号、钉钉通知和容器内 Cron 定时运行。
 
-项目提供两套公共镜像：
+项目镜像：`ghcr.io/hxcong666/douyin-auto-fire_new:latest`
 
-- 国内环境推荐：`docker.cnb.cool/1mev/douyin-auto-fire:latest`
-- 海外环境推荐：`ghcr.io/unmev/douyin-auto-fire:latest`
-
-两套镜像内容一致，只是镜像仓库不同。Python、Playwright、Chromium 和项目代码都已经封装进镜像，**Docker 部署不需要下载完整源码仓库**。
+Python、Playwright、Chromium 和项目代码都已经封装进镜像，**Docker 部署不需要下载完整源码仓库**。
 
 > 第一次使用建议先配置 1 个账号、1 个好友、1 条文字消息，并先执行 Dry Run。单账号确认正常后，再增加多账号、原生表情、随机消息或钉钉通知。
 
@@ -24,33 +21,17 @@ cd ~/douyin-auto-fire
 
 ## 2. 下载 Compose 文件
 
-### 国内服务器（推荐）
-
-只从 CNB 下载一个 `docker-compose.yml`：
-
 ```bash
-curl -fL https://cnb.cool/1mev/douyin-auto-fire/-/git/raw/main/docker-compose.yml -o docker-compose.yml
+curl -fL https://raw.githubusercontent.com/hxcong666/douyin-auto-fire_new/main/docker-compose.yml -o docker-compose.yml
 ```
 
-国内版默认使用：
+默认使用镜像：
 
 ```text
-docker.cnb.cool/1mev/douyin-auto-fire:latest
+ghcr.io/hxcong666/douyin-auto-fire_new:latest
 ```
 
 整个 Docker 部署过程不需要 `git clone` 完整仓库。
-
-### 海外服务器
-
-```bash
-curl -fL https://raw.githubusercontent.com/unmev/douyin-auto-fire/main/docker-compose.global.yml -o docker-compose.yml
-```
-
-海外版默认使用：
-
-```text
-ghcr.io/unmev/douyin-auto-fire:latest
-```
 
 ---
 
@@ -61,10 +42,6 @@ ghcr.io/unmev/douyin-auto-fire:latest
 ```bash
 nano config.json
 ```
-
-也可以使用配置生成器：
-
-**https://douyin-config.pages.dev/**
 
 一个最简单的配置例如：
 
@@ -98,7 +75,7 @@ nano cookie.json
 
 将完整 Cookie JSON 粘贴进去并保存。
 
-> Cookie 相当于账号登录凭证，请勿上传到 GitHub、CNB、Issue 或公开分享。
+> Cookie 相当于账号登录凭证，请勿上传到 GitHub、Issue 或公开分享。
 
 ---
 
@@ -266,16 +243,10 @@ docker compose ps
 docker compose logs -f
 ```
 
-国内版会拉取：
+会拉取：
 
 ```text
-docker.cnb.cool/1mev/douyin-auto-fire:latest
-```
-
-海外版会拉取：
-
-```text
-ghcr.io/unmev/douyin-auto-fire:latest
+ghcr.io/hxcong666/douyin-auto-fire_new:latest
 ```
 
 ---
@@ -504,20 +475,10 @@ docker compose pull
 docker compose up -d
 ```
 
-如果 Compose 文件本身有更新，可以重新下载。
-
-国内：
+如果 Compose 文件本身有更新，可以重新下载：
 
 ```bash
-curl -fL https://cnb.cool/1mev/douyin-auto-fire/-/git/raw/main/docker-compose.yml -o docker-compose.yml
-docker compose pull
-docker compose up -d
-```
-
-海外：
-
-```bash
-curl -fL https://raw.githubusercontent.com/unmev/douyin-auto-fire/main/docker-compose.global.yml -o docker-compose.yml
+curl -fL https://raw.githubusercontent.com/hxcong666/douyin-auto-fire_new/main/docker-compose.yml -o docker-compose.yml
 docker compose pull
 docker compose up -d
 ```
@@ -594,21 +555,13 @@ docker compose logs --tail=200
 
 ---
 
-## 14. 国内 / 海外镜像说明
-
-国内镜像：
+## 14. 镜像说明
 
 ```text
-docker.cnb.cool/1mev/douyin-auto-fire:latest
+ghcr.io/hxcong666/douyin-auto-fire_new:latest
 ```
 
-海外镜像：
-
-```text
-ghcr.io/unmev/douyin-auto-fire:latest
-```
-
-GitHub Actions 会在相关代码更新时自动构建并同时推送到 GHCR 和 CNB。CNB 同时提供国内下载 `docker-compose.yml` 的地址，Docker 用户无需克隆完整源码。
+GitHub Actions 会在相关代码更新时自动构建并推送到 GHCR（GitHub 容器镜像仓库）。
 
 ---
 

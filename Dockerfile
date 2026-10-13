@@ -1,6 +1,6 @@
 FROM python:3.11-slim-bookworm
 
-LABEL org.opencontainers.image.source="https://github.com/unmev/douyin-auto-fire"
+LABEL org.opencontainers.image.source="https://github.com/hxcong666/douyin-auto-fire_new"
 LABEL org.opencontainers.image.description="Douyin automatic streak message sender"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

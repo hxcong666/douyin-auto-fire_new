@@ -43,8 +43,8 @@ git --version
 ## 3. 下载项目
 
 ```powershell
-git clone https://github.com/unmev/douyin-auto-fire.git
-cd douyin-auto-fire
+git clone https://github.com/hxcong666/douyin-auto-fire_new.git C:\douyin-auto-fire
+cd C:\douyin-auto-fire
 ```
 
 建议放在固定路径，例如：
@@ -85,10 +85,6 @@ python -m venv .venv
 Copy-Item config.example.json config.json
 notepad config.json
 ```
-
-也可以使用配置生成器：
-
-**https://douyin-config.pages.dev/**
 
 一个最简单的配置：
 

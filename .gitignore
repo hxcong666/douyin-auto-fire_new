@@ -13,3 +13,6 @@ config.json
 storage-state.json
 storage_state/
 login_state.json
+.cache/
+.config/
+.local/
