@@ -1,165 +1,146 @@
 # 🔥 抖音自动续火花
 
-[![GitHub stars](https://img.shields.io/github/stars/unmev/douyin-auto-fire?style=flat-square)](https://github.com/unmev/douyin-auto-fire/stargazers)
-![Visitors](https://visitor-badge.laobi.icu/badge?page_id=unmev.douyin-auto-fire)
+[![GitHub stars](https://img.shields.io/github/stars/hxcong666/douyin-auto-fire_new?style=flat-square)](https://github.com/hxcong666/douyin-auto-fire_new/stargazers)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue?style=flat-square)](LICENSE)
 
-> 定时自动向抖音好友发送消息，保持火花不断。基于 Playwright 模拟真实浏览器操作，可使用 GitHub Actions、Docker、云服务器或 Windows 电脑定时运行。
-
-![douyin-auto-fire-banner.svg](https://img.908988.xyz/file/教程/douyin-auto-fire/5pdab8It.svg)
+> 部署在云服务器上，每天定时自动向抖音好友发送消息，保持火花不断。服务器上通过虚拟桌面直接扫码登录，任务结果推送到飞书机器人。
 
 ## 项目介绍
 
-`douyin-auto-fire` 是一个基于 Python + Playwright 的抖音私信自动发送工具。
+`douyin-auto-fire_new` 是一个基于 Python + Playwright 的抖音私信自动发送工具，通过模拟真实浏览器操作，按配置自动向指定好友发送文字、图片或抖音原生表情。
 
-通过模拟浏览器操作，可以按照配置自动向指定好友发送文字、图片或抖音原生表情，并支持多种运行方式。
+本项目的核心特点：
 
-如果只是想快速使用，推荐 **GitHub Actions**：不需要自己购买服务器，也不需要电脑长期保持开机。已有 Linux 服务器或 NAS 的用户推荐使用 **Docker**，也可以使用传统 Python + systemd 方式部署到云服务器，或者直接在 Windows 电脑上运行。
+- 🖥️ **服务器扫码登录**：服务器上用 Xvfb + x11vnc + noVNC 起虚拟桌面，通过浏览器远程打开服务器上的 Chromium 扫码登录，不需要在本地电脑导出 Cookie
+- 🔏 **飞书机器人加签**：支持飞书机器人「签名校验」安全设置，任务结果安全推送到飞书群
+- ⏰ **cron 每日定时**：每天 9:00 自动运行，日志按天归档，适合长期挂在云服务器上运行
 
-> ⚠️ 本项目使用 Cookie / Storage State 作为登录凭证。请只保存在安全位置，不要提交到公开仓库，也不要分享给他人。
+> ⚠️ 项目使用 Storage State / Cookie 作为登录凭证。请只保存在服务器安全位置，不要提交到公开仓库，也不要分享给他人。
 
-## 🔀 本仓库与原项目的区别
+## ✨ 功能
 
-本仓库基于 [unmev/douyin-auto-fire](https://github.com/unmev/douyin-auto-fire)（提交 `af0035f`，2026-09-11）修改，原项目采用 PolyForm Noncommercial License 1.0.0，本仓库沿用同一协议。
+- 🖥️ **服务器虚拟桌面扫码登录**：通过 SSH 隧道 + noVNC 远程操作服务器浏览器，登录状态保存为 `storage-state.json`
+- 🔏 **飞书签名校验**：配置 `FEISHU_SECRET` 后自动为飞书 Webhook 请求加签
+- ⏰ **定时自动发送**：支持 cron、systemd Timer、Docker、GitHub Actions 等方式定时运行
+- 💬 **多种消息类型**：支持文字、图片（PNG/JPG/GIF/WebP）和抖音原生表情
+- 🎲 **随机消息**：支持从多条候选消息中随机选择
+- 👥 **多好友 / 多账号**：可以同时为多个好友、多个账号配置发送任务
+- 🧪 **Dry Run 模式**：只验证登录状态和好友定位，不真实发送消息
+- 🔒 **防重复发送**：记录发送历史，减少重复触发导致的重复发送
+- 🔔 **多渠道通知**：飞书、钉钉、企业微信、Slack、Discord、Telegram 等任意 Webhook
+- 🛡️ **失败诊断**：失败时保存日志、页面截图和 Playwright Trace
+- ⏱️ **模拟真人操作**：随机发送间隔和输入节奏
 
-| | 原项目服务器教程（[docs/server.md](docs/server.md)） | 本仓库的做法 |
-| --- | --- | --- |
-| 登录方式 | 在本地电脑浏览器登录，用 Cookie-Editor 导出 Cookie 上传到服务器 | 在服务器上用 Xvfb + x11vnc + noVNC 起虚拟桌面，通过网页 VNC 打开服务器上的浏览器，运行 `scripts/login.py` 扫码登录 |
-| 登录凭证 | `/etc/douyin-auto-fire/cookie.json`，通过 `DOUYIN_COOKIE` 指定 | 项目根目录的 `storage-state.json`，程序自动读取 |
-| 定时方式 | systemd Timer | root crontab 每天 9:00 调用 [`deploy/cron/douyin-daily-run.sh`](deploy/cron/douyin-daily-run.sh) |
-| 通知 | 钉钉机器人 | 飞书机器人，支持签名校验（`FEISHU_SECRET`） |
+## 🚀 服务器部署（推荐）
 
-### 代码改动：飞书机器人加签
+以下为本项目实际使用的部署方式：项目目录 `/opt/douyin-auto-sender`，运行用户 `douyin-sender`，Ubuntu 云服务器。
 
-原项目的通用 Webhook 发送飞书消息时不带签名，飞书机器人开启「签名校验」后会拒收消息。本仓库在 `app/notifier.py` 中增加了飞书签名：
+### 1. 安装项目
 
-- 当 `WEBHOOK_URL` 指向 `open.feishu.cn` 且配置了 `FEISHU_SECRET` 时，自动在请求体中加入 `timestamp` 和 `sign`
-- 签名算法与飞书官方一致：以 `timestamp + "\n" + secret` 为密钥做 HMAC-SHA256，再 base64 编码
-- 未配置 `FEISHU_SECRET` 时行为与原项目完全一致，不影响钉钉、企业微信等其他通知
+```bash
+sudo useradd --system --home /opt/douyin-auto-sender --shell /usr/sbin/nologin douyin-sender
+sudo git clone https://github.com/hxcong666/douyin-auto-fire_new.git /opt/douyin-auto-sender
+sudo chown -R douyin-sender:douyin-sender /opt/douyin-auto-sender
+
+cd /opt/douyin-auto-sender
+sudo -u douyin-sender -H python3 -m venv .venv
+sudo -u douyin-sender -H .venv/bin/pip install -r requirements.txt
+sudo .venv/bin/playwright install-deps chromium
+sudo -u douyin-sender -H .venv/bin/playwright install chromium
+```
+
+### 2. 启动虚拟桌面
+
+```bash
+sudo apt install -y xvfb x11vnc novnc websockify
+
+Xvfb :99 -screen 0 1440x1000x24 &
+x11vnc -storepasswd                      # 设置 VNC 密码，保存到 ~/.vnc/passwd
+x11vnc -display :99 -rfbauth ~/.vnc/passwd -localhost -rfbport 5900 -forever -shared -bg
+websockify --web /usr/share/novnc 127.0.0.1:6080 127.0.0.1:5900 &
+```
+
+VNC 和 noVNC 只监听 `127.0.0.1`，不对公网开放，通过 SSH 隧道访问。
+
+### 3. 扫码登录
+
+在本地电脑建立 SSH 隧道，然后用浏览器打开 noVNC：
+
+```bash
+ssh -L 6080:127.0.0.1:6080 ubuntu@你的服务器IP
+# 浏览器访问 http://127.0.0.1:6080/vnc.html
+```
+
+在服务器上运行扫码登录脚本，浏览器会出现在 VNC 画面里，用抖音 App 扫码：
+
+```bash
+cd /opt/douyin-auto-sender
+sudo -u douyin-sender -H env DISPLAY=:99 .venv/bin/python scripts/login.py
+```
+
+登录成功后回到终端按 Enter，登录状态保存到 `storage-state.json`，程序运行时会自动读取。
+
+### 4. 配置任务和通知
+
+```bash
+sudo -u douyin-sender cp config.example.json config.json   # 好友和消息配置
+sudo -u douyin-sender cp .env.example .env                 # 环境变量
+sudo chmod 600 config.json .env
+```
+
+`.env` 关键配置：
 
 ```env
+TASK_CONFIG=/opt/douyin-auto-sender/config.json
+ARTIFACTS_DIR=/opt/douyin-auto-sender/artifacts
+HEADLESS=true
+
+# 飞书机器人通知
 WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/你的机器人ID
 FEISHU_SECRET=飞书机器人安全设置里的签名密钥
 ```
 
-### 部署方式：服务器虚拟桌面扫码登录
+使用 Storage State 登录时，注释掉 `.env` 里的 `DOUYIN_COOKIE`。
 
-不需要在本地电脑导出 Cookie，直接在服务器上扫码登录。以下为本仓库实际使用的部署结构（项目目录 `/opt/douyin-auto-sender`，运行用户 `douyin-sender`）：
-
-1. 安装虚拟桌面组件：
-
-   ```bash
-   sudo apt install -y xvfb x11vnc novnc websockify
-   ```
-
-2. 启动虚拟显示器和 VNC（只监听本机，不对公网开放）：
-
-   ```bash
-   Xvfb :99 -screen 0 1440x1000x24 &
-   x11vnc -storepasswd                      # 设置 VNC 密码，保存到 ~/.vnc/passwd
-   x11vnc -display :99 -rfbauth ~/.vnc/passwd -localhost -rfbport 5900 -forever -shared -bg
-   websockify --web /usr/share/novnc 127.0.0.1:6080 127.0.0.1:5900 &
-   ```
-
-3. 在本地电脑建立 SSH 隧道后用浏览器打开 noVNC：
-
-   ```bash
-   ssh -L 6080:127.0.0.1:6080 ubuntu@你的服务器IP
-   # 浏览器访问 http://127.0.0.1:6080/vnc.html
-   ```
-
-4. 在服务器上运行扫码登录脚本，浏览器会出现在 VNC 画面里，用抖音 App 扫码：
-
-   ```bash
-   cd /opt/douyin-auto-sender
-   sudo -u douyin-sender -H env DISPLAY=:99 .venv/bin/python scripts/login.py
-   ```
-
-   登录成功后回到终端按 Enter，登录状态保存到 `storage-state.json`。
-
-5. 配置 `.env`（参考 `.env.example`），服务器上使用无头模式运行：
-
-   ```env
-   TASK_CONFIG=/opt/douyin-auto-sender/config.json
-   ARTIFACTS_DIR=/opt/douyin-auto-sender/artifacts
-   HEADLESS=true
-   ```
-
-6. 配置每天定时运行：
-
-   ```bash
-   sudo install -m 755 deploy/cron/douyin-daily-run.sh /usr/local/bin/douyin-daily-run.sh
-   sudo crontab -e
-   # 添加一行：
-   0 9 * * * /usr/local/bin/douyin-daily-run.sh
-   ```
-
-   每天的运行日志写入 `artifacts/daily_YYYYMMDD.log`。
-
-> 注意：`scripts/login.py` 只在扫码时把 Cookie 导出一次，之后每次运行都用这份快照启动新浏览器，运行中刷新的 Cookie 不会写回文件。登录状态能保持多久取决于抖音，失效后重新执行第 3、4 步扫码即可。
-
-## ✨ 已实现功能
-
-- ⏰ **定时自动发送**：支持 GitHub Actions、Docker Cron、systemd Timer 等方式定时运行
-- 💬 **多种消息类型**：支持文字、图片（PNG/JPG/GIF/WebP）和抖音原生表情
-- 🎲 **随机消息**：支持从多条候选消息中随机选择
-- 👥 **多好友支持**：可以同时为多个好友配置发送任务
-- 👤 **多账号支持**：GitHub Actions 当前最多支持 5 个抖音账号
-- 🧪 **Dry Run 模式**：只验证登录状态和好友定位，不真实发送消息
-- 🔒 **防重复发送**：支持记录发送历史，减少重复触发导致的重复发送
-- 🔔 **钉钉通知**：支持通过钉钉机器人接收任务结果
-- 🔗 **通用 Webhook**：支持企业微信、飞书、Slack、Discord、Telegram 等任意 Webhook 通知
-- 🛡️ **失败诊断**：失败时可保存日志、页面截图和 Playwright Trace
-- 🔐 **登录凭证灵活**：支持 Cookie 或浏览器 Storage State
-- ⏱️ **模拟真人操作**：支持随机发送间隔和输入节奏
-
-## 🚀 快速使用教程
-
-根据自己的使用场景选择一种部署方式即可：
-
-### ☁️ [GitHub Actions 部署 →](docs/github-actions.md)
-
-**推荐大多数用户使用。** 无需服务器，电脑也不需要长期在线，Fork 后配置 Secrets 即可每天自动运行。
-
-包含 Cookie 获取、配置生成、GitHub Secrets、Dry Run、定时任务、多账号和失败诊断等完整图文步骤。
-
-### 🐳 [Docker 部署 →](docs/docker.md)
-
-**推荐已有 Linux 服务器、NAS、1Panel 或宝塔环境的用户使用。** 镜像已经包含 Python、Playwright 和 Chromium，只需要在宿主机保存 `config.json`、`cookie.json` 和日志目录。
-
-默认镜像：
-
-```text
-ghcr.io/unmev/douyin-auto-fire:latest
-```
-
-启动：
+先执行一次 Dry Run，确认登录和好友定位正常（不会真实发送消息）：
 
 ```bash
-docker compose up -d
+sudo -u douyin-sender -H .venv/bin/python run.py --dry-run
 ```
 
-### 🖥️ [云服务器部署 →](docs/server.md)
+### 5. 配置每日定时
 
-适合希望使用传统 Python + systemd 方式部署的 Linux VPS / 云服务器用户。
+```bash
+sudo install -m 755 deploy/cron/douyin-daily-run.sh /usr/local/bin/douyin-daily-run.sh
+sudo crontab -e
+# 添加一行：
+0 9 * * * /usr/local/bin/douyin-daily-run.sh
+```
 
-使用 Python + Playwright + Headless Chromium 运行，并通过 `systemd Timer` 每天自动执行。教程包含环境安装、Cookie 配置、Dry Run、systemd 定时、日志查看和项目更新。
+每天的运行日志写入 `artifacts/daily_YYYYMMDD.log`，运行结果在 `artifacts/result.json`。
 
-### 🪟 [Windows 电脑部署 →](docs/windows.md)
+### 登录失效
 
-适合想先在自己的电脑上运行或长期使用 Windows 电脑挂机的用户。
+`scripts/login.py` 只在扫码时导出一次登录状态，之后每次运行都使用这份快照，运行中刷新的 Cookie 不会写回文件。登录状态能保持多久取决于抖音，收到失败通知或日志提示未登录时，重新执行第 3 步扫码即可。
 
-支持直接运行项目自带的扫码登录脚本生成 `storage-state.json`，也可以使用 Cookie，并可通过 Windows 任务计划程序每天自动运行。
+## 🔏 飞书机器人加签
 
-> 第一次使用无论选择哪种部署方式，都建议先配置 **1 个账号 + 1 个好友 + 1 条文字消息**，先执行 Dry Run，确认正常后再真实发送和增加其他配置。
+飞书机器人开启「签名校验」后，不带签名的消息会被拒收。本项目在 `app/notifier.py` 中实现了飞书签名：
 
-## 📢 通知配置
+- 当 `WEBHOOK_URL` 指向 `open.feishu.cn` 且配置了 `FEISHU_SECRET` 时，自动在请求体中加入 `timestamp` 和 `sign`
+- 签名算法与飞书官方一致：以 `timestamp + "\n" + secret` 为密钥做 HMAC-SHA256，再 base64 编码
+- 未配置 `FEISHU_SECRET` 时不加签，不影响钉钉、企业微信等其他通知
 
-项目支持任务完成后发送通知到多种平台：
+飞书机器人设置：群设置 → 群机器人 → 添加自定义机器人 → 安全设置勾选「签名校验」，把 Webhook 地址填入 `WEBHOOK_URL`、签名密钥填入 `FEISHU_SECRET`。
 
-- **通用 Webhook 配置** - 支持企业微信、飞书、Slack、Discord、Telegram 等任意 Webhook 端点
-- **钉钉机器人** - 通过环境变量 `DINGTALK_WEBHOOK` 和 `DINGTALK_SECRET` 配置
+## 📚 其他部署方式
 
-通知功能完全可选，不配置不影响消息发送。
+- [云服务器 systemd 部署](docs/server.md)：使用 Cookie + systemd Timer
+- [Docker 部署](docs/docker.md)：适合 NAS、1Panel、宝塔环境
+- [GitHub Actions 部署](docs/github-actions.md)：无需服务器
+- [Windows 电脑部署](docs/windows.md)：Windows 任务计划程序定时运行
+
+> 第一次使用建议先配置 **1 个账号 + 1 个好友 + 1 条文字消息**，先执行 Dry Run，确认正常后再真实发送和增加其他配置。
 
 ## 🧰 技术栈
 
@@ -167,11 +148,10 @@ docker compose up -d
 | --- | --- |
 | 语言 | Python 3.11+ |
 | 浏览器自动化 | [Playwright](https://playwright.dev/python/) + Chromium |
-| 定时调度 | GitHub Actions / Docker Cron / systemd Timer / Windows 任务计划程序 |
-| 环境变量 | python-dotenv |
-| 时区 | tzdata |
-| 通知 | 钉钉机器人 / 通用 Webhook（企业微信、飞书、Slack 等） |
-| 支持平台 | Windows / macOS / Linux / Docker |
+| 远程登录 | Xvfb + x11vnc + noVNC |
+| 定时调度 | cron / systemd Timer / Docker Cron / GitHub Actions |
+| 通知 | 飞书机器人（加签）/ 钉钉机器人 / 通用 Webhook |
+| 运行环境 | Ubuntu 云服务器 |
 
 主要依赖：
 
@@ -183,37 +163,12 @@ tzdata>=2025.2
 
 ## ⚠️ 注意事项
 
-- Cookie、Storage State 和发送配置不要直接提交到公开仓库。
+- `storage-state.json`、`config.json`、`.env` 不要提交到仓库，已在 `.gitignore` 中排除。
 - 修改好友、消息或表情配置后，建议先运行一次 Dry Run。
 - 同一个抖音账号不要同时运行多个自动发送任务，避免重复发送。
-- GitHub-hosted Runner、Docker 主机或云服务器网络环境可能触发抖音安全验证。
-- 如果 Cookie / Storage State 失效或抖音要求验证码，需要本人重新完成登录验证。
+- 云服务器网络环境可能触发抖音安全验证，需要本人通过 VNC 重新完成验证。
 - 抖音网页结构发生变化时，自动化功能可能需要同步适配。
-
-⭐ 支持一下
-
-如果这个项目帮你省下了每天手动续火花的时间，欢迎点个 Star ⭐ 支持一下！
-
-你的每一个 Star 都是我继续维护、修 Bug 和增加新功能的动力。
-
-## Star History
-
-<a href="https://www.star-history.com/?repos=unmev%2Fdouyin-auto-fire&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=unmev/douyin-auto-fire&type=date&theme=dark&legend=top-left&sealed_token=TkydV0nYtjJ4qP2Nb5Y9f7po-HgwD2pBSxu77UV_GBPhEVJk1qucxdlno9qqdKfANCMyyjgMRjk4QWqZlHQsHJbB3sEPxDIc3ExjCvi-uNJ1crMXnMCytA" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=unmev/douyin-auto-fire&type=date&legend=top-left&sealed_token=TkydV0nYtjJ4qP2Nb5Y9f7po-HgwD2pBSxu77UV_GBPhEVJk1qucxdlno9qqdKfANCMyyjgMRjk4QWqZlHQsHJbB3sEPxDIc3ExjCvi-uNJ1crMXnMCytA" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=unmev/douyin-auto-fire&type=date&legend=top-left&sealed_token=TkydV0nYtjJ4qP2Nb5Y9f7po-HgwD2pBSxu77UV_GBPhEVJk1qucxdlno9qqdKfANCMyyjgMRjk4QWqZlHQsHJbB3sEPxDIc3ExjCvi-uNJ1crMXnMCytA" />
- </picture>
-</a>
-
-## 友情链接
-
-- [LINUX DO](https://linux.do/) - 新的理想型社区
 
 ## License
 
-本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)。
-
-允许个人学习、研究、修改和非商业用途使用本项目；未经授权，不得将本项目或其衍生版本用于商业用途、收费服务、付费部署、倒卖或其他营利性场景。
-
-如需商业授权，请联系项目维护者。
+本项目采用 [PolyForm Noncommercial License 1.0.0](LICENSE)，仅限个人学习、研究和非商业用途使用。
