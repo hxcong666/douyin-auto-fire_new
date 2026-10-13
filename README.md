@@ -17,6 +17,86 @@
 
 > ⚠️ 本项目使用 Cookie / Storage State 作为登录凭证。请只保存在安全位置，不要提交到公开仓库，也不要分享给他人。
 
+## 🔀 本仓库与原项目的区别
+
+本仓库基于 [unmev/douyin-auto-fire](https://github.com/unmev/douyin-auto-fire)（提交 `af0035f`，2026-09-11）修改，原项目采用 PolyForm Noncommercial License 1.0.0，本仓库沿用同一协议。
+
+| | 原项目服务器教程（[docs/server.md](docs/server.md)） | 本仓库的做法 |
+| --- | --- | --- |
+| 登录方式 | 在本地电脑浏览器登录，用 Cookie-Editor 导出 Cookie 上传到服务器 | 在服务器上用 Xvfb + x11vnc + noVNC 起虚拟桌面，通过网页 VNC 打开服务器上的浏览器，运行 `scripts/login.py` 扫码登录 |
+| 登录凭证 | `/etc/douyin-auto-fire/cookie.json`，通过 `DOUYIN_COOKIE` 指定 | 项目根目录的 `storage-state.json`，程序自动读取 |
+| 定时方式 | systemd Timer | root crontab 每天 9:00 调用 [`deploy/cron/douyin-daily-run.sh`](deploy/cron/douyin-daily-run.sh) |
+| 通知 | 钉钉机器人 | 飞书机器人，支持签名校验（`FEISHU_SECRET`） |
+
+### 代码改动：飞书机器人加签
+
+原项目的通用 Webhook 发送飞书消息时不带签名，飞书机器人开启「签名校验」后会拒收消息。本仓库在 `app/notifier.py` 中增加了飞书签名：
+
+- 当 `WEBHOOK_URL` 指向 `open.feishu.cn` 且配置了 `FEISHU_SECRET` 时，自动在请求体中加入 `timestamp` 和 `sign`
+- 签名算法与飞书官方一致：以 `timestamp + "\n" + secret` 为密钥做 HMAC-SHA256，再 base64 编码
+- 未配置 `FEISHU_SECRET` 时行为与原项目完全一致，不影响钉钉、企业微信等其他通知
+
+```env
+WEBHOOK_URL=https://open.feishu.cn/open-apis/bot/v2/hook/你的机器人ID
+FEISHU_SECRET=飞书机器人安全设置里的签名密钥
+```
+
+### 部署方式：服务器虚拟桌面扫码登录
+
+不需要在本地电脑导出 Cookie，直接在服务器上扫码登录。以下为本仓库实际使用的部署结构（项目目录 `/opt/douyin-auto-sender`，运行用户 `douyin-sender`）：
+
+1. 安装虚拟桌面组件：
+
+   ```bash
+   sudo apt install -y xvfb x11vnc novnc websockify
+   ```
+
+2. 启动虚拟显示器和 VNC（只监听本机，不对公网开放）：
+
+   ```bash
+   Xvfb :99 -screen 0 1440x1000x24 &
+   x11vnc -storepasswd                      # 设置 VNC 密码，保存到 ~/.vnc/passwd
+   x11vnc -display :99 -rfbauth ~/.vnc/passwd -localhost -rfbport 5900 -forever -shared -bg
+   websockify --web /usr/share/novnc 127.0.0.1:6080 127.0.0.1:5900 &
+   ```
+
+3. 在本地电脑建立 SSH 隧道后用浏览器打开 noVNC：
+
+   ```bash
+   ssh -L 6080:127.0.0.1:6080 ubuntu@你的服务器IP
+   # 浏览器访问 http://127.0.0.1:6080/vnc.html
+   ```
+
+4. 在服务器上运行扫码登录脚本，浏览器会出现在 VNC 画面里，用抖音 App 扫码：
+
+   ```bash
+   cd /opt/douyin-auto-sender
+   sudo -u douyin-sender -H env DISPLAY=:99 .venv/bin/python scripts/login.py
+   ```
+
+   登录成功后回到终端按 Enter，登录状态保存到 `storage-state.json`。
+
+5. 配置 `.env`（参考 `.env.example`），服务器上使用无头模式运行：
+
+   ```env
+   TASK_CONFIG=/opt/douyin-auto-sender/config.json
+   ARTIFACTS_DIR=/opt/douyin-auto-sender/artifacts
+   HEADLESS=true
+   ```
+
+6. 配置每天定时运行：
+
+   ```bash
+   sudo install -m 755 deploy/cron/douyin-daily-run.sh /usr/local/bin/douyin-daily-run.sh
+   sudo crontab -e
+   # 添加一行：
+   0 9 * * * /usr/local/bin/douyin-daily-run.sh
+   ```
+
+   每天的运行日志写入 `artifacts/daily_YYYYMMDD.log`。
+
+> 注意：`scripts/login.py` 只在扫码时把 Cookie 导出一次，之后每次运行都用这份快照启动新浏览器，运行中刷新的 Cookie 不会写回文件。登录状态能保持多久取决于抖音，失效后重新执行第 3、4 步扫码即可。
+
 ## ✨ 已实现功能
 
 - ⏰ **定时自动发送**：支持 GitHub Actions、Docker Cron、systemd Timer 等方式定时运行
