@@ -51,6 +51,42 @@ def test_rejects_empty_targets(tmp_path: Path) -> None:
         load_task(settings_for(path))
 
 
+def test_skips_disabled_targets(tmp_path: Path) -> None:
+    path = write_config(
+        tmp_path,
+        {
+            "targets": [
+                {"name": "好友A", "enabled": False, "messages": [{"type": "text", "content": "你好"}]},
+                {"name": "好友B", "messages": [{"type": "text", "content": "早上好"}]},
+            ]
+        },
+    )
+
+    task = load_task(settings_for(path))
+
+    assert [target.name for target in task.targets] == ["好友B"]
+
+
+def test_rejects_all_targets_disabled(tmp_path: Path) -> None:
+    path = write_config(
+        tmp_path,
+        {"targets": [{"name": "好友A", "enabled": False, "messages": [{"type": "text", "content": "你好"}]}]},
+    )
+
+    with pytest.raises(ConfigError, match="没有启用的好友"):
+        load_task(settings_for(path))
+
+
+def test_rejects_non_bool_enabled(tmp_path: Path) -> None:
+    path = write_config(
+        tmp_path,
+        {"targets": [{"name": "好友A", "enabled": "no", "messages": [{"type": "text", "content": "你好"}]}]},
+    )
+
+    with pytest.raises(ConfigError, match="enabled 必须是布尔值"):
+        load_task(settings_for(path))
+
+
 def test_rejects_missing_image(tmp_path: Path) -> None:
     path = write_config(
         tmp_path,

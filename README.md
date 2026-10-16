@@ -14,6 +14,7 @@
 - 🖥️ **服务器扫码登录**：服务器上用 Xvfb + x11vnc + noVNC 起虚拟桌面，通过浏览器远程打开服务器上的 Chromium 扫码登录，不需要在本地电脑导出 Cookie
 - 🔏 **飞书机器人加签**：支持飞书机器人「签名校验」安全设置，任务结果安全推送到飞书群
 - ⏰ **cron 每日定时**：每天 9:00 自动运行，日志按天归档，适合长期挂在云服务器上运行
+- 🖱️ **网页管理后台**：在网页上增删好友、编辑消息、启用停用、查看执行结果和日志，详见 [管理后台](docs/admin.md)
 
 > ⚠️ 项目使用 Storage State / Cookie 作为登录凭证。请只保存在服务器安全位置，不要提交到公开仓库，也不要分享给他人。
 
@@ -123,6 +124,26 @@ sudo crontab -e
 
 `scripts/login.py` 只在扫码时导出一次登录状态，之后每次运行都使用这份快照，运行中刷新的 Cookie 不会写回文件。登录状态能保持多久取决于抖音，收到失败通知或日志提示未登录时，重新执行第 3 步扫码即可。
 
+## 🖱️ 管理后台
+
+在网页上管理续火花好友，不用再手动编辑 `config.json`：
+
+- 添加、编辑、删除好友，为每个好友配置文字、表情、图片或随机消息
+- 一键启用 / 停用某个好友，配置保留
+- 保存后下次定时任务自动生效；任务运行中保存也不会冲突
+- 查看最近执行时间、每个好友的发送结果和失败原因、每天的运行日志
+- 账号密码登录，浏览器拿不到抖音 Cookie 等登录凭证
+
+```bash
+scripts/admin/build-web.sh                               # 构建前端
+sudo -u douyin-sender -H scripts/admin/install.sh        # 安装依赖
+sudo -u douyin-sender -H scripts/admin/set-password.sh   # 设置账号密码
+sudo cp deploy/systemd/douyin-admin.service /etc/systemd/system/
+sudo systemctl enable --now douyin-admin                 # 启动，默认端口 8090
+```
+
+部署、访问方式和安全说明见 [docs/admin.md](docs/admin.md)。
+
 ## 🔏 飞书机器人加签
 
 飞书机器人开启「签名校验」后，不带签名的消息会被拒收。本项目在 `app/notifier.py` 中实现了飞书签名：
@@ -149,6 +170,7 @@ sudo crontab -e
 | 语言 | Python 3.11+ |
 | 浏览器自动化 | [Playwright](https://playwright.dev/python/) + Chromium |
 | 远程登录 | Xvfb + x11vnc + noVNC |
+| 管理后台 | FastAPI + Next.js 15 + React 19 + Tailwind CSS 4 |
 | 定时调度 | cron / systemd Timer / Docker Cron / GitHub Actions |
 | 通知 | 飞书机器人（加签）/ 钉钉机器人 / 通用 Webhook |
 | 运行环境 | Ubuntu 云服务器 |

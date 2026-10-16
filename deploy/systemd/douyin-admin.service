@@ -1,0 +1,29 @@
+[Unit]
+Description=Douyin auto fire admin panel
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=douyin-sender
+Group=douyin-sender
+WorkingDirectory=/opt/douyin-auto-sender
+ExecStart=/opt/douyin-auto-sender/scripts/admin/serve.sh
+Restart=on-failure
+RestartSec=5
+UMask=0077
+
+# 安全加固：只允许写配置文件所在目录和日志目录
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/douyin-auto-sender
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

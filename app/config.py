@@ -61,7 +61,11 @@ def load_task(settings: Settings) -> TaskConfig:
     if not isinstance(targets_raw, list) or not targets_raw:
         raise ConfigError("targets 必须是非空数组")
 
-    targets = tuple(_parse_target(item, index, settings.task_config_path.parent) for index, item in enumerate(targets_raw))
+    # enabled 缺省为启用；停用的好友不参与解析和发送
+    enabled_raw = [(index, item) for index, item in enumerate(targets_raw) if _target_enabled(item, index)]
+    if not enabled_raw:
+        raise ConfigError("没有启用的好友，请至少启用一个")
+    targets = tuple(_parse_target(item, index, settings.task_config_path.parent) for index, item in enabled_raw)
     interval = raw.get("send_interval_seconds", {})
     if not isinstance(interval, dict):
         raise ConfigError("send_interval_seconds 必须是对象")
@@ -117,6 +121,15 @@ def parse_auth_json(value: str, label: str) -> Any:
         return json.loads(value)
     except json.JSONDecodeError as exc:
         raise ConfigError(f"{label} 不是有效 JSON 或可读文件路径") from exc
+
+
+def _target_enabled(raw: Any, index: int) -> bool:
+    if not isinstance(raw, dict):
+        return True  # 交给 _parse_target 报格式错误
+    enabled = raw.get("enabled", True)
+    if not isinstance(enabled, bool):
+        raise ConfigError(f"targets[{index}].enabled 必须是布尔值")
+    return enabled
 
 
 def _parse_target(raw: Any, index: int, config_dir: Path) -> Target:

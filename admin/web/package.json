@@ -1,0 +1,24 @@
+{
+  "name": "douyin-admin-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.4.11",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.4",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.6",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}

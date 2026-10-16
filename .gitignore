@@ -16,3 +16,11 @@ login_state.json
 .cache/
 .config/
 .local/
+.env.admin
+logs/
+admin/.venv/
+admin/web/node_modules/
+admin/web/.next/
+admin/web/out/
+admin/web/next-env.d.ts
+admin/web/tsconfig.tsbuildinfo
